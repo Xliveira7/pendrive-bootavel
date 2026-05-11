@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BootUSB Creator | Estilo Rufus</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --panel: #16161c;
+      --border: #2a2a35;
+      --text: #e1e1e6;
+      --muted: #8d8d99;
+      --accent: #0078d7;
+      --accent-hover: #005a9e;
+      --danger: #d32f2f;
+      --success: #2e7d32;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); line-height: 1.5; padding: 20px; }
+    .container { max-width: 820px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 { font-size: 1.9rem; letter-spacing: -0.5px; }
+    header p { color: var(--muted); font-size: 0.9rem; margin-top: 6px; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .panel h2 { font-size: 1.05rem; margin-bottom: 12px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+    label { display: block; margin-bottom: 10px; }
+    select, input[type="file"], input[type="text"] { width: 100%; padding: 9px 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 5px; margin-top: 4px; font-size: 0.95rem; }
+    input[type="file"]::file-selector-button { background: var(--border); color: var(--text); border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin: 12px 0; }
+    .options label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .actions { display: flex; gap: 10px; margin-top: 16px; }
+    button { flex: 1; padding: 11px; border: none; border-radius: 5px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.95rem; }
+    .primary { background: var(--accent); color: white; }
+    .primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .primary:disabled { background: #4a4a5a; cursor: not-allowed; }
+    .secondary { background: var(--border); color: var(--text); }
+    .secondary:hover { background: #3a3a4a; }
+    .progress-wrap { height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; margin: 14px 0 8px; }
+    #progress { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s ease; }
+    #log { background: var(--bg); padding: 10px; border-radius: 5px; height: 130px; overflow-y: auto; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.82rem; color: var(--muted); white-space: pre-wrap; line-height: 1.4; }
+    .sys-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed var(--border); font-size: 0.9rem; }
+    .sys-item:last-child { border: none; }
+    .sys-key { color: var(--muted); }
+    .sys-val { font-weight: 500; color: var(--text); }
+    .badge { display: inline-block; padding: 2px 6px; background: #2a2a35; border-radius: 4px; font-size: 0.75rem; color: var(--muted); margin-left: 6px; }
+    .warn { color: #ff9800; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🖥️ BootUSB Creator</h1>
+      <p>Interface inspirada no Rufus • Simulação Educacional com Dados Reais do Sistema</p>
+    </header>
+
+    <main>
+      <section class="panel">
+        <h2>📊 Dados Reais Detectados</h2>
+        <div id="sysData"></div>
+      </section>
+
+      <section class="panel">
+        <h2>⚙️ Configuração do Pendrive</h2>
+        <label>Dispositivo: 
+          <select id="device">
+            <option value="">Carregando dispositivos...</option>
+          </select>
+        </label>
+
+        <label>Seleção de Boot: 
+          <input type="file" id="isoFile" accept=".iso,.img,.efi">
+          <span id="isoName" style="display:block; margin-top:4px; color:var(--muted); font-size:0.85rem;">Nenhum arquivo selecionado</span>
+        </label>
+
+        <label>Esquema de Partição: 
+          <select id="partition">
+            <option value="gpt">GPT (UEFI)</option>
+            <option value="mbr">MBR (BIOS ou UEFI-CSM)</option>
+          </select>
+        </label>
+
+        <label>Sistema de Arquivos: 
+          <select id="fs">
+            <option value="fat32">FAT32</option>
+            <option value="ntfs">NTFS</option>
+            <option value="exfat">exFAT</option>
+          </select>
+        </label>
+
+        <label>Rótulo do Volume: 
+          <input type="text" id="label" value="BOOT_USB" maxlength="11">
+        </label>
+
+        <div class="options">
+          <label><input type="checkbox" id="quickFormat" checked> Formatação Rápida</label>
+          <label><input type="checkbox" id="createBoot" checked> Criar disco inicializável</label>
+          <label><input type="checkbox" id="checkBadBlocks"> Verificar blocos defeituosos</label>
+        </div>
+
+        <div class="actions">
+          <button id="startBtn" class="primary">▶ INICIAR</button>
+          <button id="cancelBtn" class="secondary">⏹ CANCELAR</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>📈 Progresso & Logs</h2>
+        <div class="progress-wrap"><div id="progress"></div></div>
+        <pre id="log">Aguardando início...
+</pre>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSystemInfo();
+      populateDevices();
+      setupListeners();
+    });
+
+    // 🔍 Coleta dados REAIS disponíveis via Web APIs
+    function loadSystemInfo() {
+      const sys = {
+        'Sistema Operacional': detectOS(),
+        'Arquitetura': navigator.platform || 'N/A',
+        'Núcleos Lógicos': navigator.hardwareConcurrency || 'Indisponível',
+        'Memória RAM (aprox.)': navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'Indisponível',
+        'Resolução Ativa': `${window.screen.width} × ${window.screen.height}`,
+        'Pixel Ratio': window.devicePixelRatio || 1,
+        'Idioma do SO': navigator.language || navigator.languages?.[0] || 'N/A',
+        'Fuso Horário': Intl.DateTimeFormat().resolvedOptions().timeZone,
+        'Agente de Navegação': navigator.userAgent.split(') ')[1]?.split(' ')[0] || navigator.userAgent
+      };
+
+      const el = document.getElementById('sysData');
+      el.innerHTML = Object.entries(sys).map(([k, v]) => 
+        `<div class="sys-item"><span class="sys-key">${k}:</span><span class="sys-val">${v}</span></div>`
+      ).join('');
+    }
+
+    function detectOS() {
+      const ua = navigator.userAgent;
+      if (/Windows NT 10/.test(ua)) return 'Windows 10';
+      if (/Windows NT 11|Windows 11/.test(ua)) return 'Windows 11';
+      if (/Windows/.test(ua)) return 'Windows (versão antiga)';
+      if (/Mac OS X/.test(ua)) return 'macOS';
+      if (/Linux/.test(ua)) return 'Linux';
+      return 'Desconhecido';
+    }
+
+    // 💾 Simula enumeração de dispositivos (em app real: WebUSB/Electron + Win32 API)
+    function populateDevices() {
+      const sel = document.getElementById('device');
+      const drives = [
+        { id: 'usb1', label: 'SanDisk Ultra 32GB', size: '29.1 GB', type: 'usb' },
+        { id: 'usb2', label: 'Kingston DataTraveler 16GB', size: '14.8 GB', type: 'usb' },
+        { id: 'hd1', label: 'Disco Local (C:)', size: '476.9 GB', type: 'hd' }
+      ];
+      sel.innerHTML = '';
+      drives.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = `${d.label} (${d.size})${d.type === 'hd' ? ' ⚠️ Interno' : ''}`;
+        if (d.type === 'hd') opt.disabled = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    function setupListeners() {
+      const isoInput = document.getElementById('isoFile');
+      isoInput.addEventListener('change', () => {
+        const f = isoInput.files[0];
+        document.getElementById('isoName').textContent = f 
+          ? `${f.name} • ${(f.size / (1024**3)).toFixed(2)} GB • Tipo: ${f.type || 'ISO/IMG'}`
+          : 'Nenhum arquivo selecionado';
+      });
+
+      document.getElementById('startBtn').addEventListener('click', startProcess);
+      document.getElementById('cancelBtn').addEventListener('click', () => window.location.reload());
+    }
+
+    function log(msg) {
+      const el = document.getElementById('log');
+      el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function updateProgress(pct) {
+      document.getElementById('progress').style.width = `${pct}%`;
+    }
+
+    async function startProcess() {
+      const btn = document.getElementById('startBtn');
+      const device = document.getElementById('device').value;
+      const iso = document.getElementById('isoFile').files[0];
+      const part = document.getElementById('partition').value;
+      const fs = document.getElementById('fs').value;
+      const label = document.getElementById('label').value || 'BOOT_USB';
+
+      if (!device) return alert('Selecione um dispositivo USB.');
+      if (!iso) return alert('Selecione uma imagem ISO/IMG.');
+      if (document.getElementById('device').selectedOptions[0].disabled) {
+        return alert('⚠️ Não é possível selecionar discos internos por segurança.');
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ PROCESSANDO...';
+      log('🔍 Coletando parâmetros do sistema...');
+      updateProgress(5);
+      await delay(600);
+
+      log(`✅ SO: ${detectOS()} | CPU: ${navigator.hardwareConcurrency} núcleos | RAM: ${navigator.deviceMemory || '?'} GB`);
+      updateProgress(12);
+      await delay(500);
+
+      log(`📦 Imagem: ${iso.name} (${(iso.size/(1024**3)).toFixed(2)} GB)`);
+      log(`🔧 Partição: ${part.toUpperCase()} | FS: ${fs.toUpperCase()} | Rótulo: ${label}`);
+      updateProgress(25);
+      await delay(800);
+
+      log('🧹 Formatando dispositivo (modo rápido)...');
+      updateProgress(40);
+      await delay(1000);
+
+      log(`📝 Gravando setor de boot ${part === 'gpt' ? '(EFI/UEFI)' : '(MBR/Legacy)'}...`);
+      updateProgress(60);
+      await delay(900);
+
+      log('📂 Copiando estrutura de arquivos do SO...');
+      for (let i = 65; i <= 90; i += 5) {
+        updateProgress(i);
+        await delay(350);
+      }
+
+      log('🔒 Sincronizando buffers e finalizando...');
+      updateProgress(95);
+      await delay(600);
+
+      log('🎉 Pendrive bootável criado com sucesso!');
+      updateProgress(100);
+      btn.disabled = false;
+      btn.textContent = '▶ INICIAR';
+    }
+
+    function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+  </script>
+</body>
+</html>
